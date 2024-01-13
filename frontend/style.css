@@ -1,0 +1,59 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#menuForm {
+    margin-bottom: 20px;
+}
+
+#menuList {
+    list-style: none;
+    padding: 0;
+}
+
+.menu-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.edit-btn {
+    cursor: pointer;
+    margin: 0px 10px;
+    border: none;
+    background: rgb(129, 210, 248);
+    color: white;
+    border-radius: 4px;
+}
+
+.delete-btn {
+    cursor: pointer;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.mb-4 {
+    text-align: center;
+}
+
+#dynamicMenuList {
+    border: 1px solid black;
+    margin-left: 30px;
+}
