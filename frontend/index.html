@@ -1,0 +1,270 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #menuForm {
+            margin-bottom: 20px;
+        }
+
+        #menuList {
+            list-style: none;
+            padding: 0;
+        }
+
+        .menu-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .edit-btn {
+            cursor: pointer;
+            margin: 0px 10px;
+            border: none;
+            background: rgb(129, 210, 248);
+            color: white;
+            border-radius: 4px;
+        }
+
+        .delete-btn {
+            cursor: pointer;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .mb-4 {
+            text-align: center;
+        }
+
+        #dynamicMenuList {
+            border: 1px solid black;
+            margin-left: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="page1">
+        <h1 class="mb-4">Menu Management</h1>
+
+        <form id="menuForm">
+            <div class="form-row">
+                <div class="col-md-6 mb-3">
+                    <label for="menuName">Menu Name:</label>
+                    <input type="text" class="form-control" id="menuName" required>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="parentMenu">Parent Menu:</label>
+                <select class="form-control" id="parentMenu">
+                    <option value="">None</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="addMenu()">Add Menu</button>
+            <button type="button" class="btn btn-secondary" onclick="showAllMenus()">Show All Menus</button>
+        </form>
+    </div>
+
+    <div class="container" id="page2" style="display: none;">
+        <h1 class="mb-4">Menu Management</h1>
+        <div id="dynamicMenuList"></div>
+        <button type="button" class="btn btn-secondary" onclick="goBack()">Go Back</button>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>
+
+
+<script>
+    async function addMenu() {
+        const menuName = document.getElementById('menuName').value;
+        const parentMenu = document.getElementById('parentMenu').value;
+
+        await fetch('http://localhost:3000/addMenu', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: menuName,
+                parent: parentMenu
+            }),
+        });
+
+        getMenuList();
+    }
+
+    async function editMenu(menuName, parentMenu) {
+        const updatedName = prompt('Enter the updated menu name:', menuName);
+        const updatedParent = prompt('Enter the updated parent menu:', parentMenu);
+
+        await fetch('http://localhost:3000/editMenu', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                originalName: menuName,
+                updatedName,
+                updatedParent
+            }),
+        });
+
+        getMenuList();
+    }
+
+
+
+    async function deleteMenu(menuName) {
+        const confirmDelete = confirm(`Are you sure you want to delete ${menuName}?`);
+
+        if (confirmDelete) {
+            const response = await fetch(`http://localhost:3000/deleteMenu/${menuName}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+
+                if (responseData.success) {
+                    alert(responseData.message);
+                    getMenuList();
+                } else {
+                    alert(responseData.message);
+                }
+            } else {
+                alert('Error deleting menu.');
+            }
+        }
+    }
+
+
+    async function getMenuList() {
+        const response = await fetch('http://localhost:3000/getMenus');
+        const menus = await response.json();
+        const dynamicMenuList = document.getElementById('dynamicMenuList');
+        dynamicMenuList.innerHTML = '';
+        console.log(menus);
+
+        // Organize menus into a hierarchy
+        const menuHierarchy = organizeMenusIntoHierarchy(menus);
+
+        // Render menus with hierarchy
+        renderMenusWithHierarchy(menuHierarchy, dynamicMenuList);
+
+        populateParentMenuDropdown();
+    }
+
+    function organizeMenusIntoHierarchy(menus) {
+        const menuMap = new Map();
+
+        // Create a map with menu names as keys
+        menus.forEach(menu => {
+            menuMap.set(menu.name, { ...menu, children: [] });
+        });
+
+        // Populate the children array based on parent references
+        menus.forEach(menu => {
+            const { name, parent } = menu;
+            if (parent && menuMap.has(parent)) {
+                menuMap.get(parent).children.push(menuMap.get(name));
+            }
+        });
+
+        // Return the root-level menus (those without a parent)
+        return Array.from(menuMap.values()).filter(menu => !menu.parent);
+    }
+
+    function renderMenusWithHierarchy(menus, parentElement) {
+        menus.forEach(menu => {
+            const listItem = document.createElement('div');
+            listItem.className = 'menu-item';
+            listItem.textContent = `${menu.name} - Parent: ${menu.parent || 'None'}`;
+
+            const editButton = document.createElement('button');
+            editButton.className = 'edit-btn';
+            editButton.textContent = 'Edit';
+            editButton.onclick = () => editMenu(menu.name, menu.parent);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-btn';
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => deleteMenu(menu.name);
+
+            listItem.appendChild(editButton);
+            listItem.appendChild(deleteButton);
+
+            if (menu.children.length > 0) {
+                const submenuList = document.createElement('div');
+                submenuList.className = 'submenu-list';
+                listItem.appendChild(submenuList);
+                renderMenusWithHierarchy(menu.children, submenuList);
+            }
+
+            parentElement.appendChild(listItem);
+        });
+    }
+
+    getMenuList();
+    async function populateParentMenuDropdown() {
+        const parentMenuDropdown = document.getElementById('parentMenu');
+        parentMenuDropdown.innerHTML = '<option value="">--- All Menu ---</option>';
+
+        const response = await fetch('http://localhost:3000/getMenus');
+        const menus = await response.json();
+
+        menus.forEach(menu => {
+            const option = document.createElement('option');
+            option.value = menu.name;
+            option.textContent = menu.name;
+            parentMenuDropdown.appendChild(option);
+        });
+    }
+    function showAllMenus() {
+        document.getElementById('page1').style.display = 'none';
+        document.getElementById('page2').style.display = 'block';
+        getMenuList();
+    }
+
+    function goBack() {
+        document.getElementById('page2').style.display = 'none'
+        document.getElementById('page1').style.display = 'block';
+    }
+</script>
+</script>
+</body>
+
+</html>
