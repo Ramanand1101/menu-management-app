@@ -127,4 +127,3 @@ Make sure to replace `http://localhost:3000` with the appropriate server URL and
 This project is licensed under the [MIT License](LICENSE).
 ```
 
-Make sure to replace placeholder URLs, usernames, repository names, and filenames with your actual information. Additionally, update the License section with the appropriate license for your project.
